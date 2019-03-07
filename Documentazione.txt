@@ -1,0 +1,30 @@
+
+Il progetto è eseguibile tramite 2 script shell:
+ - StartCase1.sh: Avvia il manager e  5 client che chiedono rispettivamente, 4, 5, 4, 3 e 2 risorse.
+ - StartCase2.sh: Avvia il manager e 5 client che chiedono rispettivamente, 1, 7, 5, 3 e 2 risorse.
+
+
+ In entrambi i casi si evidenzia come tutti i client vengono soddisfatti correttamente:
+ 	 -  Nel primo si usano un numero elevato di risorse all'inizio e basso alla fine cosi da evidenziare che i client che chiedono un numero basso di risorse non 	 vengono gestiti prima dei precedenti client che hanno richiesto un numero maggiore di risorse, potendone quindi causare lo stato di starvation.
+ 	 -  Nel secondo si gestisce immediatamente un client che chiede una sola risorsa impedendo al successivo di essere subito gestito. Quest'ultimo viene inserito 	in coda e gestito sicuramente dopo il primo.
+
+Client.c:
+	All'avvio manda al manager il numero di risorse che chiede ed attende una risposta.
+	Quest'ultima arriva solo quando le risorse sono disponibili, tramite una lista di
+	identificatori. Il client prosegue usando la risorsa e poi comunica al manager di aver terminato.
+
+Manager.c:
+	Il manager all'avvio resta in attesa su 2 fd, uno per l'allocazione ed uno per la deallocazione.
+
+	Nel caso un client chieda risorse non disponibili lo inserisce in una coda che andrà a 	ricontrollare ogni volta, in fase di deallocazione. Ogni volta che un altro client comunica di aver terminato con una risorsa, il manager la dealloca e controlla se il numero di risorse libere raggiunto è ora sufficente. Nel caso il numero raggiunto sia sufficente a liberare il primo client bloccato sulla coda, passa ad allocare le risorse per lui, e lui soltanto, gestendo quindi la coda in modalità FIFO.
+
+Eventuali altri client vengono soddisfatti solo se la coda è vuota, altrimenti vengono inseriti nella stessa dalla quale, essendo gestita FIFO, sicuramente usciranno
+
+
+
+Protocollo anti-starvation:
+
+	Si utilizza una coda gestita FIFO in cui il client che non può essere soddisfatto immediatamente viene inserito. In questo modo si deve aspettare il tempo necessario per far terminare chi sta attualmente usando le risorse, per poi soddisfare il primo client che si trova in coda, poi il secondo e cosi via...
+	Solo quando la coda è vuota si passano ad ascoltare nuove richieste immediatamente soddisfacibili, le richieste che arrivano se la coda non è vuota vengono inserite nella stessa. 
+	Si garantisce cosi che tutti i client verranno soddisfatti in quanto un client, una volta inserito in coda, verra sicuramente richiamato e gestito.
+
